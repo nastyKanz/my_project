@@ -1,0 +1,44 @@
+---
+- name: Deploy Nginx with a dynamic configuration
+  hosts: web
+  become: yes
+
+  tasks:
+    - name: Install Docker and Docker Compose
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Create directories for the application
+      file:
+        path: /opt/my_project
+        state: directory
+
+    - name: Copy docker-compose.yml to the server
+      copy:
+        src: ../docker-compose.yml
+        dest: /opt/my_project/docker-compose.yml
+
+    - name: Copy Dockerfile to the server
+      copy:
+        src: ../docker/Dockerfile
+        dest: /opt/my_project/Dockerfile
+
+    - name: Copy nginx configuration template to the server
+      template:
+        src: templates/nginx.conf.j2
+        dest: /opt/my_project/nginx.conf
+
+    - name: Start the application with Docker Compose
+      command: docker-compose up -d
+      args:
+        chdir: /opt/my_project
+
+    - name: Restart Nginx
+      command: docker-compose restart web
+      args:
+        chdir: /opt/my_project
+
